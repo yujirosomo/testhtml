@@ -106,8 +106,11 @@
     <div class="player">
         <h2>MP3プレーヤー</h2>
         
+        <!-- オーディオ要素を追加 -->
+        <audio id="myAudio" src="voice_みず魔法ウォーターシャワートルネード_羽依.mp3"></audio>
+        
         <div class="track-info">
-            <p><strong>再生中:</strong> <span id="track-name">サンプル音楽.mp3</span></p>
+            <p><strong>再生中:</strong> <span id="track-name">みず魔法ウォーターシャワートルネード</span></p>
         </div>
         
         <div class="progress-container">
@@ -116,7 +119,7 @@
         
         <div class="time-display">
             <span id="current-time">0:00</span>
-            <span id="total-time">3:45</span>
+            <span id="total-time">0:00</span>
         </div>
         
         <div class="buttons">
@@ -129,8 +132,6 @@
             <input type="range" min="0" max="100" value="80" id="volume-slider" oninput="changeVolume(this.value)">
             <span id="volume-value">80%</span>
         </div>
-        
-        <p><small>※このデモでは実際の音声は再生されません</small></p>
     </div>
 
     <script>
@@ -139,7 +140,7 @@
         let isMuted = false;
         let interval;
         let currentSeconds = 0;
-        const totalSeconds = 225; // 3分45秒
+        let totalSeconds = 0;
         
         // DOM要素
         const playBtn = document.getElementById('play-btn');
@@ -149,6 +150,13 @@
         const volumeSlider = document.getElementById('volume-slider');
         const volumeValue = document.getElementById('volume-value');
         const volumeIcon = document.querySelector('.volume-icon');
+        const audioElement = document.getElementById('myAudio');
+        
+        // オーディオが読み込まれたら再生時間を更新
+        audioElement.addEventListener('loadedmetadata', function() {
+            totalSeconds = Math.floor(audioElement.duration);
+            document.getElementById('total-time').textContent = formatTime(totalSeconds);
+        });
         
         // 再生/一時停止の切り替え
         function togglePlay() {
@@ -161,16 +169,16 @@
         
         // 再生開始
         function playAudio() {
+            audioElement.play();
             isPlaying = true;
             playBtn.textContent = '一時停止';
             stopBtn.disabled = false;
             
             // プログレスバー更新のインターバル設定
             interval = setInterval(() => {
-                if (currentSeconds < totalSeconds) {
-                    currentSeconds++;
-                    updateProgress();
-                } else {
+                currentSeconds = Math.floor(audioElement.currentTime);
+                updateProgress();
+                if (currentSeconds >= Math.floor(audioElement.duration)) {
                     stopAudio();
                 }
             }, 1000);
@@ -178,6 +186,7 @@
         
         // 一時停止
         function pauseAudio() {
+            audioElement.pause();
             isPlaying = false;
             playBtn.textContent = '再生';
             clearInterval(interval);
@@ -186,6 +195,7 @@
         // 停止
         function stopAudio() {
             pauseAudio();
+            audioElement.currentTime = 0;
             currentSeconds = 0;
             updateProgress();
             stopBtn.disabled = true;
@@ -200,6 +210,9 @@
         
         // 秒を mm:ss 形式にフォーマット
         function formatTime(seconds) {
+            if (isNaN(seconds) || !isFinite(seconds)) {
+                return "0:00";
+            }
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
             return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -208,6 +221,7 @@
         // 音量変更
         function changeVolume(value) {
             volumeValue.textContent = `${value}%`;
+            audioElement.volume = value / 100;
             
             // 音量アイコン更新
             updateVolumeIcon(value);
@@ -221,31 +235,16 @@
                 volumeSlider.setAttribute('data-prev-value', volumeSlider.value);
                 volumeSlider.value = 0;
                 volumeValue.textContent = '0%';
+                audioElement.volume = 0;
                 volumeIcon.textContent = '🔇';
             } else {
                 const prevValue = volumeSlider.getAttribute('data-prev-value') || 80;
                 volumeSlider.value = prevValue;
                 volumeValue.textContent = `${prevValue}%`;
+                audioElement.volume = prevValue / 100;
                 updateVolumeIcon(prevValue);
             }
         }
         
         // 音量アイコン更新
-        function updateVolumeIcon(value) {
-            if (value == 0) {
-                volumeIcon.textContent = '🔇';
-            } else if (value < 33) {
-                volumeIcon.textContent = '🔈';
-            } else if (value < 66) {
-                volumeIcon.textContent = '🔉';
-            } else {
-                volumeIcon.textContent = '🔊';
-            }
-        }
-        
-        // 初期表示
-        currentTimeDisplay.textContent = formatTime(currentSeconds);
-        document.getElementById('total-time').textContent = formatTime(totalSeconds);
-    </script>
-</body>
-</html>
+        function update
