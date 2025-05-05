@@ -100,6 +100,12 @@
         .volume-icon {
             cursor: pointer;
         }
+        
+        .error-message {
+            color: red;
+            margin-top: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -132,6 +138,8 @@
             <input type="range" min="0" max="100" value="80" id="volume-slider" oninput="changeVolume(this.value)">
             <span id="volume-value">80%</span>
         </div>
+        
+        <div class="error-message" id="error-msg"></div>
     </div>
 
     <script>
@@ -151,11 +159,20 @@
         const volumeValue = document.getElementById('volume-value');
         const volumeIcon = document.querySelector('.volume-icon');
         const audioElement = document.getElementById('myAudio');
+        const errorMsg = document.getElementById('error-msg');
         
         // オーディオが読み込まれたら再生時間を更新
         audioElement.addEventListener('loadedmetadata', function() {
             totalSeconds = Math.floor(audioElement.duration);
             document.getElementById('total-time').textContent = formatTime(totalSeconds);
+            console.log("Audio loaded successfully, duration: " + totalSeconds + " seconds");
+        });
+        
+        // オーディオエラーのイベントリスナー
+        audioElement.addEventListener('error', function(e) {
+            console.error('Audio error:', e);
+            errorMsg.textContent = 'オーディオファイルの読み込みに失敗しました。ファイルパスを確認してください。';
+            errorMsg.style.display = 'block';
         });
         
         // 再生/一時停止の切り替え
@@ -169,19 +186,31 @@
         
         // 再生開始
         function playAudio() {
-            audioElement.play();
-            isPlaying = true;
-            playBtn.textContent = '一時停止';
-            stopBtn.disabled = false;
+            // プロミスで再生を試みる（ブラウザのポリシー対応）
+            const playPromise = audioElement.play();
             
-            // プログレスバー更新のインターバル設定
-            interval = setInterval(() => {
-                currentSeconds = Math.floor(audioElement.currentTime);
-                updateProgress();
-                if (currentSeconds >= Math.floor(audioElement.duration)) {
-                    stopAudio();
-                }
-            }, 1000);
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    // 再生成功
+                    isPlaying = true;
+                    playBtn.textContent = '一時停止';
+                    stopBtn.disabled = false;
+                    
+                    // プログレスバー更新のインターバル設定
+                    interval = setInterval(() => {
+                        currentSeconds = Math.floor(audioElement.currentTime);
+                        updateProgress();
+                        if (currentSeconds >= Math.floor(audioElement.duration)) {
+                            stopAudio();
+                        }
+                    }, 1000);
+                }).catch(error => {
+                    // 再生失敗
+                    console.error('Playback failed:', error);
+                    errorMsg.textContent = '再生に失敗しました: ' + error.message;
+                    errorMsg.style.display = 'block';
+                });
+            }
         }
         
         // 一時停止
@@ -247,4 +276,20 @@
         }
         
         // 音量アイコン更新
-        function update
+        function updateVolumeIcon(value) {
+            if (value == 0) {
+                volumeIcon.textContent = '🔇';
+            } else if (value < 50) {
+                volumeIcon.textContent = '🔉';
+            } else {
+                volumeIcon.textContent = '🔊';
+            }
+        }
+        
+        // 初期音量設定
+        changeVolume(volumeSlider.value);
+        
+        console.log("Script loaded. Checking if audio file exists at: voice_mizumagic.mp3");
+    </script>
+</body>
+</html>
