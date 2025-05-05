@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP3プレーヤーデモ</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+            margin: 0;
+        }
+        
+        .player {
+            text-align: center;
+            padding: 30px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        
+        .buttons {
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0 5px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        
+        .track-info {
+            margin: 20px 0;
+            color: #555;
+        }
+        
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            color: #777;
+            font-size: 14px;
+        }
+        
+        .volume-control {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .volume-control input {
+            width: 100px;
+            margin: 0 10px;
+        }
+        
+        .volume-icon {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="player">
+        <h2>MP3プレーヤー</h2>
+        
+        <div class="track-info">
+            <p><strong>再生中:</strong> <span id="track-name">サンプル音楽.mp3</span></p>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+        
+        <div class="time-display">
+            <span id="current-time">0:00</span>
+            <span id="total-time">3:45</span>
+        </div>
+        
+        <div class="buttons">
+            <button id="play-btn" onclick="togglePlay()">再生</button>
+            <button id="stop-btn" onclick="stopAudio()" disabled>停止</button>
+        </div>
+        
+        <div class="volume-control">
+            <span class="volume-icon" onclick="toggleMute()">🔊</span>
+            <input type="range" min="0" max="100" value="80" id="volume-slider" oninput="changeVolume(this.value)">
+            <span id="volume-value">80%</span>
+        </div>
+        
+        <p><small>※このデモでは実際の音声は再生されません</small></p>
+    </div>
+
+    <script>
+        // プレーヤーの状態
+        let isPlaying = false;
+        let isMuted = false;
+        let interval;
+        let currentSeconds = 0;
+        const totalSeconds = 225; // 3分45秒
+        
+        // DOM要素
+        const playBtn = document.getElementById('play-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const progressBar = document.getElementById('progress');
+        const currentTimeDisplay = document.getElementById('current-time');
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeValue = document.getElementById('volume-value');
+        const volumeIcon = document.querySelector('.volume-icon');
+        
+        // 再生/一時停止の切り替え
+        function togglePlay() {
+            if (isPlaying) {
+                pauseAudio();
+            } else {
+                playAudio();
+            }
+        }
+        
+        // 再生開始
+        function playAudio() {
+            isPlaying = true;
+            playBtn.textContent = '一時停止';
+            stopBtn.disabled = false;
+            
+            // プログレスバー更新のインターバル設定
+            interval = setInterval(() => {
+                if (currentSeconds < totalSeconds) {
+                    currentSeconds++;
+                    updateProgress();
+                } else {
+                    stopAudio();
+                }
+            }, 1000);
+        }
+        
+        // 一時停止
+        function pauseAudio() {
+            isPlaying = false;
+            playBtn.textContent = '再生';
+            clearInterval(interval);
+        }
+        
+        // 停止
+        function stopAudio() {
+            pauseAudio();
+            currentSeconds = 0;
+            updateProgress();
+            stopBtn.disabled = true;
+        }
+        
+        // プログレスバーと時間表示の更新
+        function updateProgress() {
+            const percentage = (currentSeconds / totalSeconds) * 100;
+            progressBar.style.width = `${percentage}%`;
+            currentTimeDisplay.textContent = formatTime(currentSeconds);
+        }
+        
+        // 秒を mm:ss 形式にフォーマット
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // 音量変更
+        function changeVolume(value) {
+            volumeValue.textContent = `${value}%`;
+            
+            // 音量アイコン更新
+            updateVolumeIcon(value);
+        }
+        
+        // ミュート切り替え
+        function toggleMute() {
+            isMuted = !isMuted;
+            
+            if (isMuted) {
+                volumeSlider.setAttribute('data-prev-value', volumeSlider.value);
+                volumeSlider.value = 0;
+                volumeValue.textContent = '0%';
+                volumeIcon.textContent = '🔇';
+            } else {
+                const prevValue = volumeSlider.getAttribute('data-prev-value') || 80;
+                volumeSlider.value = prevValue;
+                volumeValue.textContent = `${prevValue}%`;
+                updateVolumeIcon(prevValue);
+            }
+        }
+        
+        // 音量アイコン更新
+        function updateVolumeIcon(value) {
+            if (value == 0) {
+                volumeIcon.textContent = '🔇';
+            } else if (value < 33) {
+                volumeIcon.textContent = '🔈';
+            } else if (value < 66) {
+                volumeIcon.textContent = '🔉';
+            } else {
+                volumeIcon.textContent = '🔊';
+            }
+        }
+        
+        // 初期表示
+        currentTimeDisplay.textContent = formatTime(currentSeconds);
+        document.getElementById('total-time').textContent = formatTime(totalSeconds);
+    </script>
+</body>
+</html>
